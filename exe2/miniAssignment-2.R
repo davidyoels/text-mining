@@ -51,14 +51,14 @@ tdm.m # Number of propabilty of each term in the document #Q. 4
 
 as.dataframe(tdm.m)
 
-common.words <- subset(tdm.m, tdm.m[,1] > 0 & tdm.m[,2] > 0)
+common.words <- subset(tdm.m, tdm.m[,1] > 0 & tdm.m[,2] > 0) #Q. 6
 
 tdm.m
 common.words
 
-sum <- rowSums(common.words)
+sum <- rowSums(common.words) #Q. 7
 sum
 
 sort(sum, decreasing = T)
 
-
+commonality.cloud(tdm, max.words = 4, random.order=FALSE,colors=pal) #Q. 8

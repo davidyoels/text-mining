@@ -1,8 +1,12 @@
 setwd("C:/Users/david/My Files/תואר שני - מנס סייבר/שנה ב/סמסטר ב/כריית טקסט/תרגילים/תרגיל 1")
 
+# load libraries
 library(tm)
 library(stringi)
 library(textstem)
+
+options(stringsAsFactors=FALSE) #Don't treat strings as factors (categories)
+Sys.setlocale('LC_ALL','C')
 
 # An helper function to print corpus rows
 print.corpus <- function(corpus, start=1, end=1){
@@ -11,108 +15,109 @@ print.corpus <- function(corpus, start=1, end=1){
   }
 }
 
+# An helper function to remove a given pattern from a text
+removePattern <- function(x, pattern) gsub(x, pattern = pattern, replacement = "")
+
+urlPattern <- "http\\S*" # URL pattern
+mentionPattern <- "@\\S*" # Mention pattern
+starPattern <- "\\*\\S*" # Star pattern
+
+removeURL <- function (x) removePattern(x, urlPattern) #Removes all URLs starts with http
+removeMentionPattern <- function (x) removePattern(x, mentionPattern) # Removes all mentions with @
+removeStarPattern <- function (x) removePattern(x, starPattern)# Removes all texts start with *
+
 # Question 1
-tweets <- read.csv('Sentiment180_2000.csv') # read csv file
-tweets.df<-data.frame(doc_id=seq(1:nrow(tweets)),text=tweets$Text) # convert text column to data frame 
-#(doc_id, text) format required in corpus
+tweets <- read.csv('Sentiment180_2000.csv') #Read Sentiment180_2000 csv file
+tweets.df<-data.frame(doc_id=seq(1:nrow(tweets)),text=tweets$Text) #Convert "text" column to data frame 
+#To create a corpus, the columns doc_id & text are required.
 
 # Question 2
-corpus <- VCorpus(DataframeSource(tweets.df)) # Creates a corpus with the data frame we created
+corpus <- VCorpus(DataframeSource(tweets.df)) #Creates a corpus with the data frame created before
 
 # Question 3
-# An helper function to clean corpus data
-custom.stopwords <- c(stopwords("english")) #words to remove
+custom.stopwords <- c(stopwords("english")) #Words to remove
 
+# An helper function to clear corpus data
 clean.corpus <- function(corpus){
-  corpus <- tm_map(corpus, content_transformer(tolower)) # lower all texts
-  corpus <- tm_map(corpus, removeWords, custom.stopwords)
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "http\\S*", replacement = ""))) # remove all the characters after the http
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "@\\S*", "", replacement = ""))) # remove all the characters after the @
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "\\*\\S*", "", replacement = ""))) # remove all the characters after the *
+  corpus <- tm_map(corpus, content_transformer(tolower)) #lower all texts
+  corpus <- tm_map(corpus, content_transformer(removeURL)) # Remove all the characters after the http
+  corpus <- tm_map(corpus, content_transformer(removeMentionPattern)) # remove all the characters after the @
+  corpus <- tm_map(corpus, content_transformer(removeStarPattern)) # remove all the characters after the *
   corpus <- tm_map(corpus, removePunctuation)
   corpus <- tm_map(corpus, removeNumbers)
-  corpus <- tm_map(corpus, stripWhitespace)
   corpus <- tm_map(corpus, stemDocument)
+  corpus <- tm_map(corpus, removeWords, custom.stopwords)
+  corpus <- tm_map(corpus, stripWhitespace)
 
   return(corpus)
 }
 
-tweets.df <- data.frame(doc_id=seq(1:nrow(tweets)),text=tweets$Text)
-head(tweets.df)
+corpus.cleaned <- clean.corpus(corpus) #Create a cleaned corpus using clean.corpus helper function
 
-corpus.cleaned <- clean.corpus(corpus)
-
-print.corpus(corpus.cleaned, 1, 1)
+print.corpus(corpus.cleaned, 1, 1) #Print the first row in the corpus
 
 # Question 4
 # Change 1
 # An helper function to clean corpus data - messed filter functions order
-# Swap tolower filter and custom.stopwords filter
+# Swap tolower function and custom.stopwords function
 clean.corpus.messed1 <- function(corpus){
   corpus <- tm_map(corpus, removeWords, custom.stopwords)
   corpus <- tm_map(corpus, content_transformer(tolower))
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "http\\S*", replacement = ""))) # remove all the characters after the http
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "@\\S*", "", replacement = ""))) # remove all the characters after the @
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "\\*\\S*", "", replacement = ""))) # remove all the characters after the *
+  corpus <- tm_map(corpus, content_transformer(removeURL)) # remove all the characters after the http
+  corpus <- tm_map(corpus, content_transformer(removeMentionPattern)) # remove all the characters after the @
+  corpus <- tm_map(corpus, content_transformer(removeStarPattern)) # remove all the characters after the *
   corpus <- tm_map(corpus, removePunctuation)
   corpus <- tm_map(corpus, removeNumbers)
-  corpus <- tm_map(corpus, stripWhitespace)
   corpus <- tm_map(corpus, stemDocument)
+  corpus <- tm_map(corpus, stripWhitespace)
   
   return(corpus)
 }
 
-corpus.messed.first <- clean.corpus.messed1(corpus)
+corpus.messed.first <- clean.corpus.messed1(corpus) #Create a cleaned corpus using clean.corpus helper function
 
-print.corpus(corpus.cleaned, 1, 1)
-print.corpus(corpus.messed.first, 1)
-
+print.corpus(corpus.cleaned, 1) # Print the first row of the cleaned corpus
+print.corpus(corpus.messed.first, 1) # Print the first row of the first messed corpus
 
 # Change 2
 # An helper function to clean corpus data - messed filter functions order
 # Change stripWhitespace to be the first function
 clean.corpus.messed2 <- function(corpus){
   corpus <- tm_map(corpus, content_transformer(tolower)) # lower all texts
-  corpus <- tm_map(corpus, removeWords, custom.stopwords)
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "http\\S*", replacement = ""))) # remove all the characters after the http
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "@\\S*", "", replacement = ""))) # remove all the characters after the @
-  corpus <- tm_map(corpus, content_transformer(function(x) gsub(x, pattern = "\\*\\S*", "", replacement = ""))) # remove all the characters after the *
+  corpus <- tm_map(corpus, content_transformer(removeURL)) # remove all the characters after the http
+  corpus <- tm_map(corpus, content_transformer(removeMentionPattern)) # remove all the characters after the @
+  corpus <- tm_map(corpus, content_transformer(removeStarPattern)) # remove all the characters after the *
   corpus <- tm_map(corpus, removePunctuation)
   corpus <- tm_map(corpus, removeNumbers)
-  corpus <- tm_map(corpus, stripWhitespace)
   corpus <- tm_map(corpus, stemDocument)
+  corpus <- tm_map(corpus, stripWhitespace)
+  corpus <- tm_map(corpus, removeWords, custom.stopwords)
   
   return(corpus)
 }
 
 corpus.messed.second <- clean.corpus.messed2(corpus) # call the filter function
 
-print.corpus(corpus.cleaned, 1, 1)
-print.corpus(corpus.messed.second, 1) # Print the first row in the corpus
+print.corpus(corpus.cleaned, 1) # Print the first row of the cleaned corpus
+print.corpus(corpus.messed.second, 1) # Print the first row of the second messed corpus
 
 # Question 5
 tdm <- TermDocumentMatrix(corpus.cleaned) # Create A TDM for the cleaned corpus
 
-tdm.matrix <- as.matrix(tdm) # convert to a matrix
+tdm.matrix <- as.matrix(tdm) #Convert TDM to a matrix
 
-inspect(tdm) # Inspect the TDM data, different parameters (sparcity,No. terms,No. documents)
+inspect(tdm) #Inspect the TDM data, different parameters (sparsity, No. terms, No. documents etc...)
 
 # Question 6
-terms_vec.sum <- c(rowSums(tdm.matrix)) # Create a new vector with sum of each term in all documents
+# Terms that appear in less than two document or more than Inf are discarded
+dtm <- DocumentTermMatrix(corpus.cleaned, control=list(bounds = list(global = c(2,Inf)))) 
 
-head(terms_vec.sum) # print the first 6 values
-
-tdm.matrix.new<-subset(tdm.matrix, terms_vec.sum[row.names(tdm.matrix)] != 1) # Discard all terms that appears only in 1 document
-
-tdm.new<-as.TermDocumentMatrix(tdm.matrix.new,weighting = 0.5) # Create a TDM with the new filtered matrix
-
-tdm.new
+dtm
 
 # Question 7
+library(RWeka) # Loads RWeka library
 
-library(RWeka)
-
-BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 2)) #define the function BigramTokenizer
+BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 1, max = 2)) #Define the function BigramTokenizer
 DTM_BGram <- DocumentTermMatrix(corpus.cleaned, control = list(tokenize = BigramTokenizer)) #BigramTokenizer function is passed as a parameter
-inspect(DTM_BGram)
+inspect(DTM_BGram) #Inspect the DTM BGram data, different parameters (sparsity, No. terms, No. documents etc...)
 
